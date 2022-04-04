@@ -1,0 +1,11 @@
+DROP USER IF EXISTS 'Anonymous'@'localhost';
+CREATE USER 'Anonymous'@'localhost';
+GRANT SELECT ON `car_park` . * TO 'Anonymous'@'localhost';
+
+DROP USER IF EXISTS 'User'@'localhost';
+CREATE USER 'User'@'localhost' IDENTIFIED BY 'password';
+GRANT SELECT, INSERT, UPDATE ON  `car_park` . * TO 'User'@'localhost';
+
+DROP USER IF EXISTS 'RRaul'@'localhost';
+CREATE USER 'RRaul'@'localhost' IDENTIFIED BY 'parola';
+GRANT ALL ON  `car_park` . * TO 'RRaul'@'localhost';

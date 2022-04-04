@@ -1,0 +1,229 @@
+DROP PROCEDURE IF EXISTS alimentare_vehicul;
+DELIMITER //
+CREATE PROCEDURE alimentare_vehicul(numar CHAR(7), data_alimentarii DATE, km INT, sofer INT)
+BEGIN 
+    SET @max_carb = (SELECT b.fuel_capacity FROM brand b, vehicle v WHERE (v.brandid = b.id AND STRCMP(v.nb, numar) = 0));
+    
+	INSERT INTO alimentare(nr, fuel, fueling_date, km, driverid) VALUES(numar, @max_carb, data_alimentarii, km, sofer);
+    
+    UPDATE vehicle 
+    SET fuel = @max_carb,
+		fuel_date = data_alimentarii,
+        vehicle.km = vehicle.km + km,
+        driverid = sofer
+        WHERE nb = numar;
+END//
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS consum_mediu;
+DELIMITER //
+CREATE PROCEDURE consum_mediu(IN sofer INT, OUT consum_mediu DOUBLE)
+BEGIN
+	SET @consum_total = (SELECT SUM(a.fuel) FROM alimentare a WHERE a.driverid = sofer);
+    SET @km_total = (SELECT SUM(a.km) FROM alimentare a WHERE a.driverid = sofer);
+    SET consum_mediu = @consum_total / @km_total;
+    #SELECT @consum_mediu AS 'Consum mediu';
+END//
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS inregistrare_eveniment;
+DELIMITER //
+CREATE PROCEDURE inregistrare_eveniment(tip INT, ev_date DATE, employee INT, numar CHAR(7))
+BEGIN 
+	IF (tip = 1) THEN
+		IF ((SELECT statusid FROM vehicle WHERE STRCMP(nb, numar) = 0) = 2) THEN
+            UPDATE lot SET current_size = current_size - 1 WHERE id = (SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0);
+            INSERT INTO lot_event(lotid, eventid, emp_id, ev_date) VALUES ((SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0), tip, employee, ev_date);
+            DELETE FROM vehicle WHERE STRCMP(nb, numar) = 0;
+		ELSE 
+			SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Masina nu este de vanzare.';
+		END IF;
+	END IF;
+    
+	IF (tip = 2) THEN
+		IF ((SELECT statusid FROM vehicle WHERE STRCMP(nb, numar) = 0) = 3) THEN
+			UPDATE vehicle SET statusid = 6 WHERE STRCMP(nb, numar) = 0;
+            UPDATE lot SET current_size = current_size - 1 WHERE id = (SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0);
+            INSERT INTO lot_event(lotid, eventid, emp_id, ev_date) VALUES ((SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0), tip, employee, ev_date);
+		ELSE 
+			SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Masina nu este de inchiriat.';
+		END IF;
+	END IF;
+    
+	IF (tip = 3) THEN
+		UPDATE vehicle SET statusid = 4 WHERE STRCMP(nb, numar) = 0;
+        INSERT INTO lot_event VALUES ((SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0), tip, employee, ev_date);
+	END IF;
+    
+	IF (tip = 4) THEN 
+		UPDATE vehicle SET statusid = 5 WHERE nb = numar;
+        INSERT INTO lot_event VALUES ((SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0), tip, employee, ev_date);
+	END IF;
+    
+	IF (tip = 5) THEN
+		UPDATE vehicle SET statusid = 1 WHERE STRCMP(nb, numar) = 0;
+        INSERT INTO lot_event(lotid, eventid, emp_id, ev_date) VALUES ((SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0), tip, employee, ev_date);
+	END IF;
+    
+    IF (tip = 6) THEN
+        INSERT INTO lot_event(lotid, eventid, emp_id, ev_date) VALUES ((SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0), tip, employee, ev_date);
+		UPDATE lot SET current_size = current_size - 1 WHERE id = (SELECT lotid FROM vehicle WHERE STRCMP(nb, numar) = 0);
+        DELETE FROM vehicle WHERE STRCMP(nb, numar) = 0;
+	END IF;
+END//
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS inregistrare_ruta;
+DELIMITER //
+CREATE PROCEDURE inregistrare_ruta(numar CHAR(7), sofer INT, data_sosire DATE)
+BEGIN
+	SET @ruta = (SELECT routeid FROM driver WHERE sofer = id);
+	SET @dist = (SELECT r.distance FROM route r, driver d WHERE r.id = d.routeid AND d.routeid = @ruta);
+	CALL alimentare_vehicul(numar, data_sosire, @dist, sofer);
+END//
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS raport_vehicule;
+DELIMITER //
+CREATE PROCEDURE raport_vehicule()
+BEGIN
+	SELECT v.nb AS 'Numar inmatriculare', v.out_year AS 'Anul fabricatiei', SUM(a.fuel) / SUM(a.km) AS 'Consum mediu'
+    FROM vehicle v
+    LEFT JOIN alimentare a ON v.nb = a.nr
+	GROUP BY v.nb;
+END//
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS raport_detaliat_vehicule;
+DELIMITER //
+CREATE PROCEDURE raport_detaliat_vehicule()
+BEGIN
+	SELECT v.nb AS 'Numar inmatriculare',
+			v.out_year AS 'Anul fabricatiei',
+			v.fuel_date AS 'Ultima alimentare',
+			a.driverid AS 'ID Sofer', 
+			SUM(a.fuel) / SUM(a.km) AS 'Consum mediu'
+    FROM vehicle v
+    LEFT JOIN alimentare a ON v.nb = a.nr
+    GROUP BY v.nb
+    ORDER BY a.driverid, SUM(a.fuel) / SUM(a.km), v.nb ASC, v.fuel_date DESC;
+END//
+DELIMITER ;
+    
+DROP PROCEDURE IF EXISTS all_brand_cars;
+DELIMITER //
+CREATE PROCEDURE all_brand_cars(brand VARCHAR(20), stat VARCHAR(20))
+BEGIN
+	SELECT DISTINCT v.nb AS 'Numar inmatriculare',
+			brand AS 'Firma producatoare',
+            v.lotid AS 'Lotul',
+            v.out_year AS 'Anul fabricatiei'
+	FROM vehicle v
+    RIGHT JOIN brand b ON v.brandid = (SELECT id FROM brand bb WHERE STRCMP(bb.nname, brand) = 0)
+    WHERE v.statusid = (SELECT id FROM vehicle_status vs WHERE STRCMP(vs.ttype, stat) = 0);
+    
+END//
+DELIMITER ;
+    
+DROP PROCEDURE IF EXISTS show_events;
+DELIMITER //
+CREATE PROCEDURE show_events(employee INT)
+BEGIN
+	SELECT e.nname AS 'Nume angajat',
+			e.surname AS 'Prenume angajat',
+            e.emp_role AS 'Post',
+            ev.details AS 'Eveniment',
+            le.ev_date AS 'Data',
+            le.lotid AS 'Lot'
+	FROM employee e
+    LEFT JOIN lot_event le ON le.emp_id = e.id 
+    LEFT JOIN event_ ev ON ev.id = le.eventid
+    WHERE e.id = employee;
+END//
+DELIMITER ;
+ 
+ DROP PROCEDURE IF EXISTS marire_salariu;
+DELIMITER //
+CREATE PROCEDURE marire_salariu(emp INT)
+BEGIN 
+	IF (DATEDIFF(CURRENT_DATE(), (SELECT emp_date FROM employee WHERE id = emp)) > 730) THEN
+		IF ((SELECT COUNT(emp_id) FROM lot_event WHERE emp_id = emp) > 5) THEN
+			UPDATE employee SET salary = salary + 100 WHERE id = emp;
+		ELSE
+			SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = 'Angajatul nu a luat parte la suficiente evenimente.';
+		END IF;
+	ELSE
+		SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Angajatul nu are vechimea necesara.';
+	END IF;
+END//
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS delete_employees;
+DELIMITER //
+CREATE PROCEDURE delete_employees()
+BEGIN
+	DELETE FROM employee WHERE id IN (SELECT le.emp_id
+										FROM lot_event le 
+										GROUP BY le.emp_id
+										HAVING COUNT(le.id) > 3
+											);
+END//
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS alimentare_ins;
+DELIMITER //
+CREATE TRIGGER alimentare_ins AFTER INSERT ON vehicle 
+FOR EACH ROW
+BEGIN 
+	INSERT INTO alimentare(nr, fuel, fueling_date, km, driverid) VALUES(NEW.nb, NEW.fuel, NEW.fuel_date, NEW.km, NEW.driverid);
+ END//
+ DELIMITER ;
+ 
+
+ DROP TRIGGER IF EXISTS add_vehicul;
+ DELIMITER //
+ CREATE TRIGGER add_vehicul AFTER INSERT ON vehicle
+ FOR EACH ROW
+ BEGIN
+	INSERT INTO lot_event(lotid, eventid, emp_id, ev_date) VALUES (NEW.lotid, 7, (SELECT id FROM employee e WHERE NEW.lotid = e.lotid LIMIT 1), CURRENT_DATE());
+    IF ((SELECT current_size + 1 FROM lot WHERE id = NEW.lotid) <= (SELECT size FROM lot WHERE id = NEW.lotid)) THEN
+		UPDATE lot SET current_size = current_size + 1 WHERE id = NEW.lotid;
+	ELSE
+		SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Lotul a ajuns la dimenisiunea maxima';
+	END IF;
+END//
+DELIMITER ;
+
+DROP VIEW IF EXISTS vehicule;
+CREATE VIEW vehicule(Numar_inmatriculare, Kilometraj, Combustibil, Data_ultimei_alimentari)
+AS
+SELECT v.nb,
+		v.km,
+        v.fuel,
+        v.fuel_date 
+FROM vehicle v
+WHERE v.km > 500;
+
+
+DROP VIEW IF EXISTS angajati;
+CREATE VIEW angajati(Nume, Prenume, Varsta, Salariu)
+AS
+SELECT e.nname, e.surname, e.age, e.salary
+FROM employee e
+WHERE e.age > 40;
+
+
+DROP VIEW IF EXISTS alimentari;
+CREATE VIEW alimentari(Numar_inmatriculare, Data_alimentarii, Kilometri_parcursi, Sofer)
+AS
+SELECT a.nr, a.fueling_date, a.km, a.driverid
+FROM alimentare a
+HAVING DATEDIFF(CURRENT_DATE(), a.fueling_date) <= 365;

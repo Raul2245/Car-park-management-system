@@ -1,0 +1,182 @@
+# INTEROGAREA 1 
+SELECT d.nname AS 'Nume',
+		d.surname AS 'Prenume',
+        d.age AS 'Varsta',
+        d.salary AS 'Salariu',
+        SUM(a.km) AS 'Kilometri parcursi'
+FROM driver d
+LEFT JOIN alimentare a ON a.driverid = d.id
+GROUP BY d.id
+ORDER BY d.age;
+
+#INTEROGAREA 2 
+SELECT d.nname AS 'Nume',
+		d.surname AS 'Prenume',
+        r.departure AS 'Pornire',
+        r.arrival AS 'Sosire',
+        r.distance AS 'Kilometraj'
+FROM driver d
+LEFT JOIN route r ON r.id = d.routeid 
+GROUP BY r.id
+ORDER BY r.distance;
+
+#INTEROGAREA 3 
+SELECT b.nname AS 'Nume Producator',
+		COUNT(v.id) AS 'Numar de vehicule'
+FROM vehicle v
+RIGHT JOIN brand b ON v.brandid = b.id
+GROUP BY b.id
+ORDER BY COUNT(v.id);
+
+#INTEROGAREA 4 
+SELECT l.id AS 'ID lot',
+		COUNT(v.id) AS 'Dimensiune curenta',
+        l.size AS 'Dimensiune maxima',
+        ll.city AS 'Oras',
+        ll.street AS 'Strada',
+        ll.nb AS 'Numarul'
+FROM vehicle v
+RIGHT JOIN lot l ON v.lotid = l.id
+LEFT JOIN location ll ON l.locationid = ll.id
+GROUP BY l.id;
+
+# INTEROGAREA 5 
+SELECT vs.ttype AS 'Status',
+		COUNT(v.id) AS 'Numar de vehicule',
+        vs.details AS 'Detalii'
+FROM vehicle_status vs 
+LEFT JOIN vehicle v ON vs.id = v.statusid
+GROUP BY vs.ttype;
+
+# INTEROGAREA 6 
+SELECT e.nname AS 'Nume angajat',
+		e.surname AS 'Prenume angajat', 
+        e.emp_date AS 'Data angajarii',
+        DATEDIFF(CURRENT_DATE(), e.emp_date) AS 'Vechime'
+FROM employee e
+HAVING DATEDIFF(CURRENT_DATE(), e.emp_date) < 1095;
+
+# INTEROGAREA 7 
+SELECT e.id AS 'ID angajat', 
+		e.nname AS 'Nume angajat',
+		e.surname AS 'Prenume angajat',
+        COUNT(le.id) AS 'Numar evenimente'
+FROM employee e 
+LEFT JOIN lot_event le ON le.emp_id = e.id
+GROUP BY e.id
+ORDER BY COUNT(le.id) DESC;
+
+# INTEROGAREA 8 
+SELECT d.id AS 'ID sofer',
+		d.nname AS 'Nume sofer',
+        d.surname AS 'Prenume sofer',
+        COUNT(a.id) AS 'Numar de alimentari'
+FROM driver d
+LEFT JOIN alimentare a ON a.driverid = d.id
+GROUP BY d.id
+ORDER BY COUNT(a.id) DESC
+LIMIT 3;
+
+#INTEROGAREA 9 
+SELECT b.nname AS 'Nume',
+		b.fuel_capacity AS 'Capacitate'
+FROM brand b
+ORDER BY fuel_capacity DESC
+LIMIT 1;
+
+# INTEROGAREA 10 
+SELECT *
+FROM employee
+WHERE lotid IN (
+		SELECT l.id 
+        FROM lot l
+        LEFT JOIN vehicle v ON l.id = v.lotid
+        GROUP BY l.id
+        HAVING COUNT(v.id) > 2)
+ORDER BY lotid;
+
+# INTEROGAREA 11 
+SELECT d.nname AS 'Nume',
+		d.surname AS 'Prenume',
+        r.departure AS 'Pornire',
+        r.arrival AS 'Sosire',
+        r.distance / v.km AS 'Ratio'
+FROM driver d
+LEFT JOIN route r ON d.routeid = r.id
+LEFT JOIN vehicle v ON d.id = v.driverid
+ORDER BY r.distance / v.km;
+
+#INTEROGAREA 12 
+SELECT *
+FROM vehicle v
+LEFT JOIN lot l ON v.lotid = l.id
+LEFT JOIN location ll ON l.locationid = ll.id
+WHERE ll.city = 'Bucuresti'
+ORDER BY v.id;
+		
+#INTEROGAREA 13 
+SELECT a.fueling_date AS 'Data',
+		AVG( (SELECT b.fuel_capacity 
+			FROM brand b 
+            LEFT JOIN vehicle v ON v.brandid = b.id 
+            WHERE (v.brandid = b.id AND STRCMP(v.nb, a.nr) = 0))) AS 'Media de combustibil'
+FROM alimentare a
+GROUP BY a.fueling_date
+ORDER BY AVG(a.fueling_date);
+        
+#INTEROGAREA 14 
+SELECT ev.details AS 'Eveniment',
+		COUNT(le.id) AS 'Numarul de evenimente'
+FROM event_ ev
+LEFT JOIN lot_event le ON ev.id = le.eventid
+GROUP BY ev.id
+ORDER BY COUNT(le.id);
+
+#INTEROGAREA 15 
+SELECT e.emp_role AS 'Post',
+		COUNT(e.id) AS 'Numar de angajati'
+FROM employee e
+GROUP BY e.emp_role;
+
+#INTEROGAREA 16 
+SELECT DISTINCT d.nname AS 'Nume sofer',
+		d.surname AS 'Prenume sofer',
+        d.salary AS 'Salariu sofer',
+		e.nname AS 'Nume angajat',
+        e.surname AS 'Prenume angajat',
+        e.salary AS 'Salariu angajat'
+FROM driver d, employee e
+WHERE d.salary = e.salary;
+
+#INTEROGAREA 17
+SELECT DISTINCT d.nname AS 'Nume sofer',
+		d.surname AS 'Prenume sofer'
+FROM employee d, employee dd
+WHERE (d.surname = dd.surname AND d.nname != dd.nname) OR (d.nname = dd.nname AND d.surname != dd.surname) OR (d.surname = dd.surname AND d.nname = dd.nname AND d.id != dd.id);
+
+#INTEROGAREA 18
+SELECT e.nname AS 'Nume angajat',
+		e.surname AS 'Prenume angajat',
+        DATEDIFF(CURRENT_DATE(), e.emp_date) / (365 * e.age) AS 'Ratio'
+FROM employee e
+ORDER BY DATEDIFF(CURRENT_DATE(), e.emp_date) / (365 * e.age) DESC;
+
+#INTEROGAREA 19
+SELECT d.nname AS 'Nume sofer',
+		d.surname AS 'Prenume sofer',
+        r.distance AS 'Distanta rutei',
+        v.km AS 'Kilometrajul masinii'
+FROM driver d
+LEFT JOIN route r ON d.routeid = r.id
+LEFT JOIN vehicle v ON d.id = v.driverid
+WHERE r.distance < v.km;
+
+#INTEROGAREA 20 
+SELECT b.nname AS 'Firma producatoare',
+		COUNT(le.id) AS 'Numar interactiuni'
+FROM brand b
+LEFT JOIN vehicle v ON b.id = v.brandid
+LEFT JOIN lot_event le ON v.lotid = le.lotid
+GROUP BY b.nname
+ORDER BY COUNT(le.id) DESC
+LIMIT 1;

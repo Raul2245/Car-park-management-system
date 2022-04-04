@@ -1,0 +1,204 @@
+CREATE DATABASE IF NOT EXISTS car_park;
+USE car_park;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS vehicle;
+DROP TABLE IF EXISTS driver;
+DROP TABLE IF EXISTS route;
+DROP TABLE IF EXISTS brand;
+DROP TABLE IF EXISTS vehicle_status;
+DROP TABLE IF EXISTS location;
+DROP TABLE IF EXISTS lot;
+DROP TABLE IF EXISTS employee;
+DROP TABLE IF EXISTS event_;
+DROP TABLE IF EXISTS lot_event;
+
+CREATE TABLE accounts(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	nname VARCHAR(30) NOT NULL,
+    surname VARCHAR(30) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    username VARCHAR(15) NOT NULL,
+    pass VARCHAR(20));
+
+CREATE TABLE vehicle(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    nb CHAR(7) NOT NULL,
+    brandid INT NOT NULL,
+    km INT NOT NULL,
+    statusid INT NOT NULL,
+    lotid INT NOT NULL,
+    driverid INT,
+    fuel_date DATE,
+    fuel INT,
+    out_year YEAR NOT NULL,
+    FOREIGN KEY (brandid) REFERENCES brand(id),
+    FOREIGN KEY (statusid) REFERENCES vehicle_status(id),
+    FOREIGN KEY (driverid) REFERENCES driver(id),
+    FOREIGN KEY (lotid) REFERENCES lot(id));
+    
+CREATE TABLE driver(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    nname VARCHAR(30) NOT NULL,
+    surname VARCHAR(30) NOT NULL,
+    age INT NOT NULL,
+    salary INT NOT NULL,
+    adress VARCHAR(100) NOT NULL,
+    routeid INT,
+    FOREIGN KEY (routeid) REFERENCES route(id));
+    
+CREATE TABLE route(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    departure VARCHAR(30) NOT NULL,
+    arrival VARCHAR(30) NOT NULL,
+    distance INT NOT NULL);
+    
+CREATE TABLE brand(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	nname VARCHAR(20) NOT NULL,
+    fuel_capacity INT NOT NULL);
+    
+CREATE TABLE vehicle_status(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    ttype VARCHAR(20) NOT NULL,
+    details VARCHAR(50) NOT NULL);
+
+CREATE TABLE location(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    city VARCHAR(20) NOT NULL,
+    street VARCHAR(20) NOT NULL,
+    nb INT NOT NULL);
+    
+CREATE TABLE lot(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    size INT NOT NULL,
+    locationid INT,
+    current_size INT DEFAULT 0,
+    FOREIGN KEY (locationid) REFERENCES location(id));
+    
+CREATE TABLE employee(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    nname VARCHAR(30) NOT NULL,
+    surname VARCHAR(30) NOT NULL,
+    age INT NOT NULL,
+    salary INT NOT NULL,
+    adress VARCHAR(100) NOT NULL,
+    emp_role VARCHAR(20) NOT NULL,
+    emp_date DATE NOT NULL,
+    lotid INT,
+    FOREIGN KEY (lotid) REFERENCES lot(id));
+    
+CREATE TABLE event_(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    details VARCHAR(100) NOT NULL);
+    
+CREATE TABLE lot_event(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	lotid INT,
+    eventid INT,
+    emp_id INT, 
+    ev_date DATE,
+    FOREIGN KEY (lotid) REFERENCES lot(id),
+    FOREIGN KEY (eventid) REFERENCES event_(id),
+    FOREIGN KEY (emp_id) REFERENCES employee(id));
+    
+CREATE TABLE alimentare(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	nr CHAR(7),
+    fuel INT,
+    fueling_date DATE,
+    km INT,
+    driverid INT,
+    FOREIGN KEY (driverid) REFERENCES driver(id));
+
+ALTER TABLE alimentare ADD INDEX (id);
+ALTER TABLE lot_event ADD INDEX (lotid, eventid);
+
+
+
+
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Lamboghini', 80);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Audi', 60);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Dacia', 50);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Ferrari', 30);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('BMW', 70);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Volkswagen', 100);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Ford', 50);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Renault', 80);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Citroen', 70);
+INSERT INTO brand(nname, fuel_capacity) VALUES ('Toyota', 60);
+
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Butusina', 'Florin', 52, 1900, 'Str. Gheorghe Palade, Nr. 22', 2);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Mecheres', 'Daniela', 43, 2300, 'Radu Voda nr. 1.Piata Unirii', 1);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Craciun', 'Claudia', 34, 2500, 'Drumul Valea Cricovului, nr. 85, Sector 6', 7);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Man', 'Ioan', 22, 2200, 'Strada Targu Neamt 30 Sectorul 6', 4);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Iosif', 'Ovidiu', 36, 2300, 'Calea Dorobanti 105 Sectorul 1', 10);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Sabo', 'Sergiu', 41, 1900, 'Soseaua Mihai Bravu 174 Bl. 229, Sc.A, Ap.1', 9);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Toma', 'Marcu', 57, 2000, 'Str. Nasaud, Nr. 26', 8);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Rutas', 'Ionut', 29, 2100, 'Strada Stirbei Voda nr. 50', 3);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Bosca', 'Diana', 42, 2600, 'Str.Popa Savu Nr.77', 5);
+INSERT INTO driver(nname, surname, age, salary, adress, routeid) VALUES ('Lupou', 'Georgiana', 37, 2500, 'Str. Gabroveni nr.9', 6);
+
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Domuta', 'Gabriela', 48, 1900, 'Str. Toma Caragiu nr. 3', 'Paznic', '2005-06-03', 1);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Ardelean', 'Olimpiu', 30, 2100, 'Str. Matei Basarab Nr.106', 'Ingrijitor', '2004-03-29', 2);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Haiduc', 'Sorina', 24, 2300, 'Str. Istriei nr. 20', 'Contabil', '2012-01-17', 2);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Purcar', 'Mihai', 45, 1800, 'P-ta. Kogalniceanu Nr. 8 ', 'Paznic', '2015-08-23', 3);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Hurban', 'Bogdan', 29, 2400, 'Str. Silvestru nr.33', 'Ingrijitor', '2001-05-05', 5);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Bosca', 'Gabriela', 53, 1900, 'Str. Gheorghe Bratianu, nr.44', 'Contabil', '2019-07-12', 4);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Retian', 'Denisa', 54, 2600, 'Str. Sura Mare, nr. 1', 'Ingrijitor', '2020-09-22', 6);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Bulzan', 'Alexandru', 21, 2700, 'Str. Stirbei Voda nr.44', 'Responsabil stoc', '2017-02-27', 6);
+INSERT INTO employee(nname, surname, age, salary, adress, emp_role, emp_date, lotid) VALUES ('Cozma', 'Teodora', 24, 2400, 'Str. Traian Nr. 222', 'Evidenta masini', '2009-10-09', 4);
+
+INSERT INTO event_(details) VALUES('Vanzare vehicul.');
+INSERT INTO event_(details) VALUES('Inchiriere vehicul.');
+INSERT INTO event_(details) VALUES('Reparare vehicul.');
+INSERT INTO event_(details) VALUES('Depozitare vehicul.');
+INSERT INTO event_(details) VALUES('Parcare vehicul.');
+INSERT INTO event_(details) VALUES('Furt.');
+INSERT INTO event_(details) VALUES('Adaugare vehciul.');
+
+INSERT INTO location(city, street, nb) VALUES ('Bucuresti', 'Avram Iancu', 24);
+INSERT INTO location(city, street, nb) VALUES ('Bucuresti', 'Andrei Muresan', 2);
+INSERT INTO location(city, street, nb) VALUES ('Bucuresti', 'Mihai Cipariu', 36);
+INSERT INTO location(city, street, nb) VALUES ('Ploiesti', 'Forestiera', 58);
+
+INSERT INTO lot(size, locationid) VALUES (20, 1);
+INSERT INTO lot(size, locationid) VALUES (50, 2);
+INSERT INTO lot(size, locationid) VALUES (30, 2);
+INSERT INTO lot(size, locationid) VALUES (40, 3);
+INSERT INTO lot(size, locationid) VALUES (40, 4);
+INSERT INTO lot(size, locationid) VALUES (30, 4);
+
+INSERT INTO route(departure, arrival, distance) VALUES ('Bucuresti', 'Cluj', 400);
+INSERT INTO route(departure, arrival, distance) VALUES ('Ploiesti', 'Braila', 200);
+INSERT INTO route(departure, arrival, distance) VALUES ('Braila', 'Constanta', 300);
+INSERT INTO route(departure, arrival, distance) VALUES ('Constanta', 'Sofia', 400);
+INSERT INTO route(departure, arrival, distance) VALUES ('Galati', 'Zalau', 500);
+INSERT INTO route(departure, arrival, distance) VALUES ('Zalau', 'Budapesta', 200);
+INSERT INTO route(departure, arrival, distance) VALUES ('Budapesta', 'Galati', 700);
+INSERT INTO route(departure, arrival, distance) VALUES ('Sofia', 'Bucuresti', 300);
+INSERT INTO route(departure, arrival, distance) VALUES ('Chisinau', 'Constanta', 600);
+INSERT INTO route(departure, arrival, distance) VALUES ('Bucuresti', 'Zalau', 500);
+
+INSERT INTO vehicle_status(ttype, details) VALUES ('Parcat', 'Vehiculul este parcat.');
+INSERT INTO vehicle_status(ttype, details) VALUES ('De vanzare', 'Vehiculul este de vanzare.');
+INSERT INTO vehicle_status(ttype, details) VALUES ('De inchiriat', 'Vehiculul este de inchiriat.');
+INSERT INTO vehicle_status(ttype, details) VALUES ('In reparatii', 'Vehiculul este in reparatii.');
+INSERT INTO vehicle_status(ttype, details) VALUES ('Ireparabil', 'Vehiculul nu mai poate fi reparat.');
+INSERT INTO vehicle_status(ttype, details) VALUES ('Indisponibil', 'Vehiculul nu este disponibil momentan.');
+
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('TM05ABG', 1, 120, 1, 2, 10, '2021-11-29', 20, 2006);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('CJ89ALG', 2, 30, 1, 3, 9, '2021-12-04', 20, 2007);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('BV92SCS', 3, 15, 1, 1, 8, '2021-12-13', 20, 2008);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('IF54HJV', 4, 200, 1, 4, 7, '2021-12-10', 20, 2006);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('VS28KLS', 5, 300, 1, 5, 6, '2021-12-08', 20, 2007);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('SJ11MKP', 6, 240, 1, 6, 5, '2021-11-27', 20, 2007);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('BM43ADK', 7, 360, 1, 6, 4, '2021-10-30', 20, 2007);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('MM72TRO', 8, 25, 1, 2, 3, '2021-11-30', 20, 2006);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('B324OPA', 9, 150, 1, 4, 2, '2021-11-21', 20, 2006);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('B820LDA', 10, 273, 1, 4, 1, '2021-12-03', 20, 2008);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('OL23FDF', 1, 254, 2, 1, NULL, '2021-07-19', 20, 2008);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('CT34HGD', 2, 24, 3, 3, NULL, '2021-12-02', 20, 2008);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('SJ42GHF', 3, 452, 4, 5, NULL, '2021-12-05', 20, 2004);
+INSERT INTO vehicle(nb, brandid, km, statusid, lotid, driverid, fuel_date, fuel, out_year) VALUES ('CJ89POI', 4, 542, 5, 2, NULL, '2021-01-02', 20, 2004);
